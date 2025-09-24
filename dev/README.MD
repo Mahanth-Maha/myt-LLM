@@ -4,35 +4,37 @@
 
 ### Implemented
 
-- [x] Tokenization [ [dev/01_tokenization](./dev/01_tokenization) ]
+* utils
+  - [x] Tokenization [ [dev/01_tokenization](./dev/01_tokenization) ]
+  - [x] Fast Tokenization - Encode Large Data
+  - [x] Trainer 
+  - [x] Logger
+  - [x] Checks for Pre-training 
+    - [x] Loss Check
+    - [x] metrics : perplexity, loss, acc, bpc
+    - [x] Generation Check
 
 ### In Progress
 
-- [x] Transformer 
+- [x] Transformer (continuos updates on this)
 
 ### To Implement
 
 * utils 
-
   - [ ] DataLoader 
-  - [ ] Trainer 
-  - [ ] Logger
   - [ ] Visualization
-  - [ ] Checks for Pre-training 
-    - [ ] Loss Check
-    - [ ] metrics : perplexity, etc
-    - [ ] Generation Check
+  - [ ] save checkpoints (last K and few milestones)
 
 * Optimizations 
 
-  - [ ] Architectural - tokenizer fix
+  - [ ] Architectural - Tokenizer fix (such as merging two words, not able to merge spaces, int as int - don't merge, etc)
   - [ ] Architectural - Embbed tying
   - [ ] Architectural - Residual Norm
   - [ ] Training - optimizer and settings
   - [ ] Training - clip grads
   - [ ] Training - lr : decay and warmups 
   - [ ] Systems - Choose Precision 
-  - [ ] Systems - Compile
+  - [ ] Systems - Compile 
 
 * Improvements
 
