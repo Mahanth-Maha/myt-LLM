@@ -1,0 +1,7 @@
+model:
+  name: mytlm-small
+  vocab_size: 100352
+  context_length: 1024
+  dimension: 1024
+  hidden_dimension: 2816
+  num_layers: 12
