@@ -1,0 +1,11 @@
+batch_size,accum_steps,tokens_per_opt_step,avg_time_per_opt_step,time_per_1M_tokens,status
+512,1,0,0,0,OOM
+256,2,0,0,0,OOM
+128,4,0,0,0,OOM
+64,8,0,0,0,OOM
+32,16,0,0,0,FAIL:Too few warmup steps to get stable timing
+16,32,0,0,0,FAIL:Too few warmup steps to get stable timing
+8,64,0,0,0,FAIL:Too few warmup steps to get stable timing
+4,128,0,0,0,FAIL:Too few warmup steps to get stable timing
+2,256,0,0,0,FAIL:Too few warmup steps to get stable timing
+512,1,0,0,0,OOM
