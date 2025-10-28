@@ -4,13 +4,29 @@
 Research/papers
 *.tex
 saved_*
-data/
+dev/01_tokenization/data
 !insights.md
-### User defined END
-
 # stage/train_suite_v1/*.py
 stage/train_suite_v1/data*.py
 stage/train_suite_v1/amd*.py
+
+
+
+checkpoints/
+milestones/
+
+
+*.sh
+
+
+
+
+
+
+
+
+
+### User defined END
 
 
 # Byte-compiled / optimized / DLL files
