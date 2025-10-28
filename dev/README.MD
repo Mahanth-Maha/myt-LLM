@@ -19,28 +19,33 @@
   - [x] Architectural (CORE) - Single. vs. Multi. vs Grouped. Query Attn in MHA
   - [x] Architectural - hidden-dimension
 
-### In Progress
-
 - [x] Transformer (continuos updates on this)
-  - [ ] Architectural - non-linearity
-  - [ ] Architectural (CORE) - Norms : Layer vs RMS
+  - [x] Architectural - non-linearity
+  - [x] Architectural (CORE) - Norms : Layer vs RMS
 
-### To Implement
 
 * utils 
-  - [ ] DataLoader 
-  - [ ] Visualization
-  - [ ] save checkpoints (last K and few milestones)
+  - [x] DataLoader 
+  - [x] Visualization
+  - [x] save checkpoints (last K and few milestones)
 
 * Optimizations 
-  - [ ] Architectural - Tokenizer fix (such as merging two words, not able to merge spaces, int as int - don't merge, etc)
-  - [ ] Architectural - RoPE
-  - [ ] Training - optimizer and settings
-  - [ ] Training - clip grads
-  - [ ] Training - lr : decay and warmups 
-  - [ ] Systems - Choose Precision 
-  - [ ] Systems - Compile 
+  - [x] Architectural - Tokenizer fix (such as merging two words, not able to merge spaces, int as int - don't merge, etc)
+  - [x] Architectural - RoPE
+  - [x] Training - optimizer and settings
+  - [x] Training - clip grads
+  - [x] Training - lr : decay and warmups 
+  - [x] Systems - Choose Precision 
+  - [x] Systems - Compile 
 
 * Improvements
+  - [x] Architectural (CORE) - Attn (Flash)
 
-  - [ ] Architectural (CORE) - Attn (Flash)
+### In Progress
+- None
+
+### To Implement
+- Done !
+
+
+(will implement new features soon!)

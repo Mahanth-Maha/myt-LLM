@@ -1,0 +1,45 @@
+device: cuda
+precision: bf16
+batch_size: 8
+gradient_accumulation_steps: 1
+max_epochs: 10
+logging:
+  log_files_dir: ./checkpoints/logs
+  train_log_file: ./checkpoints/logs/train.log
+  dry_run_log_file: ./checkpoints/logs/dry_run.log
+  samples_log_file: ./checkpoints/logs/gen_samples.log
+  test_logs_dir: ./checkpoints/logs/tests/
+  test_dataset_file: ./checkpoints/logs/tests/test_dataset.log
+  test_model_file: ./checkpoints/logs/tests/test_model.log
+  test_trainer_file: ./checkpoints/logs/tests/test_trainer.log
+  test_utils_file: ./checkpoints/logs/tests/test_utils.log
+  interval_steps: 100
+  tensorboard_log_dir: ./runs
+  wandb:
+    project: myt-llm
+    entity: myt-llm-entity
+checkpoint:
+  dir: ./checkpoints/latest
+  save_interval_steps: 10000
+  keep_latest: true
+  backups:
+    dir: ./checkpoints/backups
+    keep_last: 2
+resume:
+  enabled: true
+  progress_file: ./checkpoints/latest/progress.json
+dataset:
+  shard_folder: ./data/shards
+  context_length: 1024
+  dynamic_streaming: true
+optimizer:
+  name: AdamW
+  lr: 0.0001
+  weight_decay: 0.1
+scheduler:
+  type: cosine
+  warmup_steps: 1000
+milestones:
+  dir: ./checkpoints/milestones
+  interval_steps: 10000
+  dist_subfolder: dist
