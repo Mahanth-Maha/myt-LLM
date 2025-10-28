@@ -1,0 +1,126 @@
+# ============================================
+# DEVICE & GLOBAL SETTINGS
+# ============================================
+device: cuda
+deterministic: false
+
+# ============================================
+# TRAINING PARAMETERS
+# ============================================
+# Optimiser steps 
+max_steps: 9539
+# micro-batch size
+batch_size: 96
+
+effective_batch_size: 528 # for my sake only
+effective_tokens_per_batch: 1081344 # for my sake only
+
+# ============================================
+# TRAINER CONFIG
+# ============================================
+trainer:
+  accum_steps: 22
+  max_grad_norm: 1.0
+  grad_skip_nan_inf: true
+  bf16_autocast: true
+
+  val_every_steps: 250     # validate every
+  val_max_batches: 22   # no of steps to val on val_dataset
+  log_every_steps: 25
+  log_grad_norm_every: 0
+  moving_avg_alpha: 0.025
+
+  save_every_steps: 500
+  keep_last: 3
+  async_ckpt_write: true
+
+  ema_decay: 0.995 # set 0 to turn off
+  ema_update_every: 1
+
+  milestone: 1000
+  resume_train: false
+  train_time_warmup: 100
+  precomputed_train_time: 12.6501 # precomputed fro bs = 24  ac = 22
+  
+  run_name: null
+  use_tensorboard: false
+  use_wandb: false
+  wandb_mode: online
+  wandb_project: mytslm
+
+
+# ============================================
+# LOGGING & CHECKPOINTS
+# ============================================
+logging:
+  log_dir: ./models/mytslm-small/v0.debug
+  interval_steps: 100
+
+# ============================================
+# DATASET & DATALOADER
+# ============================================
+dataset:
+  shard_folder_list:
+    - ./data/shards/
+    - ./data/shards2/
+  dynamic_streaming: true
+
+dataloader_settings:
+  num_workers: 1
+  pin_memory: true
+  prefetch_factor: 1
+  persistent_workers: true
+  val_num_workers: 1
+  val_pin_memory: true
+  
+
+# ============================================
+# OPTIMIZER & SCHEDULER
+# ============================================
+optimizer:
+  name: AdamW
+  lr: 0.0003
+  betas: [0.9, 0.95]
+  eps: 1e-8
+  weight_decay: 0.1
+
+scheduler:
+  type: cosine
+  warmup_steps: 2048
+  min_lr_percentage: 10
+
+# ============================================
+# MODEL
+# ============================================
+model:
+  name: mytlm-slm-99m
+  vocab_size: 100352
+  context_length: 1024
+  dimension: 512
+  hidden_dimension: 1536
+  n_heads: 8
+  n_kv_heads: 8
+  num_layers: 14
+  non_linearity: swiglu
+  dropout: 0.2
+  tie_weights: true
+  use_checkpoint: true
+  checkpoint_ratio: 0.5
+  init_std_val: 0.02
+  use_rope: true
+
+# ============================================
+# GPU & PRECISION
+# ============================================
+gpu:
+  name: AMD
+  compile: true
+  precision: bf16
+  compile_approach: full
+
+# ============================================
+# Bench
+# ============================================
+sweep:
+  batch_sizes: [16, 32, 64, 128, 256]
+  accum_steps: [1, 4, 8]

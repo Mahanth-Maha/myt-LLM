@@ -1,0 +1,140 @@
+# ============================================
+# DEVICE & GLOBAL SETTINGS
+# ============================================
+device: cuda
+deterministic: false
+
+# ============================================
+# TRAINING PARAMETERS
+# ============================================
+# Optimiser steps 
+max_steps: 1000
+num_epochs: 1
+force_epochs: false
+# micro-batch size
+batch_size: 256
+effective_batch_size: 1024 # 256*4 # for my sake only
+
+# ============================================
+# TRAINER CONFIG
+# ============================================
+trainer:
+  accum_steps: 4
+  max_grad_norm: 1.0
+  grad_skip_nan_inf: true
+  bf16_autocast: true
+
+  val_every_steps: 100 # validate every
+  val_max_batches: 10 
+  log_every_steps: 5
+  log_grad_norm_every: 0  
+  moving_avg_alpha: 0.03
+
+  save_every_steps: 250
+  keep_last: 2
+  async_ckpt_write: true
+
+  ema_decay: 0.999
+  ema_update_every: 1
+
+  milestone: 500
+  resume_train: false
+  train_time_warmup: 100
+  precomputed_train_time: 0
+  
+  
+  run_name: null
+  use_tensorboard: true
+  use_wandb: true
+  wandb_mode: online
+  wandb_project: mytslm
+
+
+# ============================================
+# LOGGING & CHECKPOINTS
+# ============================================
+logging:
+  log_dir: ./models/mytlm-debug/v0.debug
+  interval_steps: 100
+
+# ============================================
+# DATASET & DATALOADER
+# ============================================
+dataset:
+  shard_folder_list:
+    - ./data/shards/
+    - ./data/shards2/
+  dynamic_streaming: true
+
+dataloader_settings:
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 4
+  persistent_workers: true
+  val_num_workers: 4
+  val_pin_memory: true
+
+decoding:
+  temp: 0.7
+  top_k: 18
+  top_p: 0.9
+  max_pred_tokens: 32
+  prompts:
+    - "Once upon a time"
+    - "Indian Institude of Science is known for"
+    - "Great wall of China,"
+    - "Breaking news: Scientists have discovered"
+    - "Translate English to French.\nEnglish: Hello, how are you?\nFrench: Bonjour, comment ça va?\nEnglish: I love apples.\nFrench:"
+    - "Python function to print hello world on screen:\n```python\ndef hello_world():\n\tprint("
+
+
+# ============================================
+# OPTIMIZER & SCHEDULER
+# ============================================
+optimizer:
+  name: AdamW
+  lr: 0.00015
+  betas: [0.9, 0.95]
+  eps: 1e-8
+  weight_decay: 0.1
+
+scheduler:
+  type: cosine
+  warmup_steps: 2500
+  min_lr_percentage: 3.14 # g
+
+# ============================================
+# MODEL
+# ============================================
+model:
+  name: mytlm-debug
+  vocab_size: 100352
+  context_length: 128
+  dimension: 128
+  hidden_dimension: 352
+  n_heads: 8
+  n_kv_heads: 4   # 8/4 = 2 heads share same KV
+  num_layers: 12
+  non_linearity: swiglu # can't change its fused
+  dropout: 0.1 
+  tie_weights: true
+  use_checkpoint: true
+  checkpoint_ratio: 0.5
+  init_std_val: 0.02
+  scale_std_val: null
+  use_rope: true
+# ============================================
+# GPU & PRECISION
+# ============================================
+gpu:
+  name: AMD
+  compile: true
+  precision: bf16
+  compile_approach: full
+
+# ============================================
+# Bench
+# ============================================
+sweep:
+  batch_sizes: [16, 32, 64, 128, 256]
+  accum_steps: [1, 4, 8]

@@ -1,0 +1,287 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.utils.checkpoint import checkpoint
+
+torch.backends.cuda.enable_flash_sdp(True)
+torch.backends.cuda.enable_mem_efficient_sdp(True)
+torch.backends.cuda.enable_math_sdp(True)
+
+DROPOUT_DEFAULT = 0.1
+
+class RotaryPositionalEmbedding(nn.Module):
+    def __init__(self, dim, max_seq_len, base = 10000.0):
+        super().__init__()
+        self.dim = dim
+        self.max_seq_len = max_seq_len
+        self.base = base
+        
+        inv_freq = 1.0 / (base ** (torch.arange(0, dim, 2).float() / dim))
+        self.register_buffer('inv_freq', inv_freq, persistent=False)
+        self._precompute_cos_sin(max_seq_len)
+    
+    def _precompute_cos_sin(self, seq_len):
+        t = torch.arange(seq_len, device=self.inv_freq.device, dtype=self.inv_freq.dtype)
+        freqs = torch.outer(t, self.inv_freq) 
+        emb = torch.cat((freqs, freqs), dim=-1)
+        
+        self.register_buffer('cos_cached', emb.cos(), persistent=False)
+        self.register_buffer('sin_cached', emb.sin(), persistent=False)
+    
+    def rotate_half(self, x) :
+        x1, x2 = x[..., : x.shape[-1] // 2], x[..., x.shape[-1] // 2 :]
+        return torch.cat((-x2, x1), dim=-1)
+    
+    def forward(self, q, k, start_pos = 0):
+        T = q.shape[1]
+        
+        if start_pos + T > self.max_seq_len:
+            self._precompute_cos_sin(start_pos + T)
+            self.max_seq_len = start_pos + T
+        
+        cos = self.cos_cached[start_pos:start_pos + T]
+        sin = self.sin_cached[start_pos:start_pos + T]
+        
+        cos = cos.to(dtype=q.dtype, device=q.device)[None, :, None, :]
+        sin = sin.to(dtype=q.dtype, device=q.device)[None, :, None, :]
+        
+        q_embed = (q * cos) + (self.rotate_half(q) * sin)
+        k_embed = (k * cos) + (self.rotate_half(k) * sin)
+        
+        return q_embed, k_embed
+
+    def to(self, *args, **kwargs):
+        super().to(*args, **kwargs)
+        device = kwargs.get('device', None) or (args[0] if args else None)
+        if device is not None:
+            self.cos_cached = self.cos_cached.to(device)
+            self.sin_cached = self.sin_cached.to(device)
+            self.inv_freq = self.inv_freq.to(device)
+        return self
+
+    def ntk_rescale(self, new_max_seq_len):
+        # NTK-aware RoPE scaling for longer context lengths. https://arxiv.org/abs/2306.15595
+        scale = new_max_seq_len / self.max_seq_len
+        self.inv_freq /= scale
+        self._precompute_cos_sin(new_max_seq_len)
+        self.max_seq_len = new_max_seq_len
+        print(f"[RoPE] NTK scaling applied for {new_max_seq_len} context (factor={scale:.2f})")
+
+
+class MultiHeadSelfAttention(nn.Module):
+    def __init__(self, model_dimension, context_length, n_heads, n_kv_heads=None, dropout=DROPOUT_DEFAULT, use_rope = True):
+        super().__init__()
+        self.n_heads = n_heads
+        self.use_rope = use_rope
+        self.n_kv_heads = n_kv_heads if n_kv_heads is not None else n_heads
+        self.each_head_size = model_dimension // n_heads
+        assert model_dimension % n_heads == 0, "model_dimension must be divisible by n_heads"
+        assert self.each_head_size % 2 == 0, "each_head_size must be even for RoPE"
+        assert 0 < self.n_kv_heads <= self.n_heads, "n_kv_heads must be > 0 and <= n_heads"
+        assert n_heads % self.n_kv_heads == 0, "n_heads must be divisible by n_kv_heads"
+
+        self.context_length = context_length
+        self.dropout = dropout
+        total_proj_dim = (n_heads + 2 * self.n_kv_heads) * self.each_head_size
+        self.replication_factor = n_heads // self.n_kv_heads
+        self.q_end = self.n_heads * self.each_head_size
+        self.k_end = self.q_end + self.n_kv_heads * self.each_head_size
+        
+        self.W_qkv = nn.Linear(model_dimension, total_proj_dim, bias=False)
+        self.proj_attn = nn.Linear(model_dimension, model_dimension, bias=False)
+        self.attn_proj_dropout = nn.Dropout(self.dropout)
+        if self.use_rope:
+            self.rope = RotaryPositionalEmbedding(
+                dim=self.each_head_size,
+                max_seq_len=context_length,
+            )
+        else: 
+            self.rope = None
+
+
+    def forward(self, x, start_pos=0, kv_cache=None):
+        B, T, C = x.shape
+
+        QKV = self.W_qkv(x)
+
+
+        Q = QKV[:, :, :self.q_end]
+        K = QKV[:, :, self.q_end: self.k_end]
+        V = QKV[:, :, self.k_end:]
+
+        Q = Q.view(B, T, self.n_heads, self.each_head_size)
+        K = K.view(B, T, self.n_kv_heads, self.each_head_size)
+        V = V.view(B, T, self.n_kv_heads, self.each_head_size)
+        
+        if self.use_rope:
+            Q, K = self.rope(Q, K, start_pos)
+        
+        Q = Q.transpose(1, 2)
+        K = K.transpose(1, 2)
+        V = V.transpose(1, 2)
+
+        if kv_cache is not None:
+            if "k" in kv_cache:
+                K = torch.cat([kv_cache["k"], K], dim=2)
+                V = torch.cat([kv_cache["v"], V], dim=2)
+            
+            if K.size(2) > self.context_length:
+                K = K[:, :, -self.context_length:, :]
+                V = V[:, :, -self.context_length:, :]
+            
+            kv_cache["k"], kv_cache["v"] = K, V
+
+        if self.n_kv_heads < self.n_heads:
+            K = K.repeat_interleave(self.replication_factor, dim=1)
+            V = V.repeat_interleave(self.replication_factor, dim=1)
+
+        sdpa = F.scaled_dot_product_attention(
+            Q, K, V, 
+            attn_mask = None, 
+            dropout_p=self.dropout if self.training else 0.0,
+            is_causal=True
+        )
+
+        output = sdpa.transpose(1, 2).contiguous().view(B, T, C)
+
+        return self.attn_proj_dropout(self.proj_attn(output))
+
+class FusedFNNSwiGLU(nn.Module):
+    def __init__(self, model_dimension, ffn_hid_dim, dropout=DROPOUT_DEFAULT):
+        super().__init__()
+        self.proj_silu = nn.Linear(model_dimension, 2 * ffn_hid_dim, bias=False)    
+        self.proj_ffn = nn.Linear(ffn_hid_dim, model_dimension, bias=False)    
+        self.dropout_layer = nn.Dropout(dropout)
+
+    def forward(self, x):
+        a, b = self.proj_silu(x).chunk(2, dim=-1)
+        x = F.silu(a) * b
+        return self.dropout_layer(self.proj_ffn(x))
+
+class RMSNorm(nn.Module):
+    def __init__(self, hidden_size, eps=1e-5):
+        super().__init__()
+        self.eps = eps
+        self.weight = nn.Parameter(torch.ones(hidden_size))
+
+    def forward(self, x):
+        orig_dtype = x.dtype
+        x_float = x.to(torch.float32)
+        var = x_float.pow(2).mean(-1, keepdim=True)
+        x_norm = x_float * torch.rsqrt(var + self.eps)
+        return (self.weight * x_norm).to(orig_dtype)
+
+
+class DecoderBlock(nn.Module):
+    def __init__(self, model_dimension, context_length, n_heads, ffn_hid_dim, n_kv_heads=None, dropout=DROPOUT_DEFAULT,use_rope = True):
+        super().__init__()
+        self.attn_norm = RMSNorm(model_dimension)
+        self.attn = MultiHeadSelfAttention(model_dimension, context_length, n_heads, n_kv_heads, dropout ,use_rope=use_rope)
+        self.ffn_norm = RMSNorm(model_dimension)
+        self.ffn = FusedFNNSwiGLU(model_dimension, ffn_hid_dim, dropout)
+
+    def forward(self, x, start_pos = 0, kv_cache=None):
+        x = x + self.attn(self.attn_norm(x), start_pos, kv_cache=kv_cache)
+        x = x + self.ffn(self.ffn_norm(x))
+        return x
+
+
+class DecoderOnlyTransformer(nn.Module):
+    def __init__(self, vocab_size, context_length, model_dimension, n_heads, Nx_blocks, ffn_hid_dim, n_kv_heads =None, dropout=DROPOUT_DEFAULT, tie_weights=True, init_std_val = 0.02, use_checkpoint=True, checkpoint_ratio = 0.5, scale_std = None, use_rope = True):
+        super().__init__()
+        self.Nx_blocks = Nx_blocks
+        self.use_checkpoint = use_checkpoint
+        self.ckpt_start = int(Nx_blocks * checkpoint_ratio)
+        self.context_length = context_length
+        self.use_rope = use_rope
+        self.token_emb = nn.Embedding(vocab_size, model_dimension)
+        if not self.use_rope:
+            self.pos_emb = nn.Embedding(context_length, model_dimension)
+        self.blocks = nn.ModuleList([
+            DecoderBlock(
+                model_dimension, 
+                context_length,
+                n_heads, 
+                ffn_hid_dim, 
+                n_kv_heads, 
+                dropout,
+                use_rope = use_rope,
+            ) for _ in range(Nx_blocks)
+        ])
+        self.final_norm = RMSNorm(model_dimension)
+        self.lm_head = nn.Linear(model_dimension, vocab_size, bias=False)
+        if tie_weights:
+            self.lm_head.weight = self.token_emb.weight
+        if scale_std:
+            self._init_weights(init_std_val, scale_std)
+        else:
+            self._init_weights(init_std_val, ((2 * self.Nx_blocks) ** -0.5))
+
+    def _init_weights(self, std_val = 0.02, scale_std = 1 ):
+        for module in self.modules():
+            if isinstance(module, nn.Linear):
+                nn.init.normal_(module.weight, mean=0.0, std=std_val)
+                if module.bias is not None:
+                    torch.nn.init.zeros_(module.bias)
+            elif isinstance(module, nn.Embedding):
+                nn.init.normal_(module.weight, mean=0.0, std=std_val)
+        for b in self.blocks:
+            b.attn.proj_attn.weight.data.mul_(scale_std)
+            b.ffn.proj_ffn.weight.data.mul_(scale_std)
+            
+    def forward(self, input_ids, start_pos=0):
+        x = self.token_emb(input_ids)
+        if not self.use_rope:
+            positions = torch.arange(input_ids.shape[1], device=input_ids.device).unsqueeze(0)
+            x = x + self.pos_emb(positions)
+        for i, block in enumerate(self.blocks):
+            if self.training and self.use_checkpoint and i >= self.ckpt_start:
+                x = checkpoint(lambda t: block(t, start_pos), x, use_reentrant=False)
+            else:
+                x = block(x, start_pos)
+        x = self.final_norm(x)
+        return self.lm_head(x)
+    
+    
+    def _forward_with_cache(self, x, start_pos, kv_caches):
+        x = self.token_emb(x)
+        for i, block in enumerate(self.blocks):
+            x = block(x, start_pos=start_pos, kv_cache=kv_caches[i])
+        x = self.final_norm(x)
+        return self.lm_head(x)
+
+    @torch.no_grad()
+    def generate(self, x, max_pred_tokens, temp=1.0, top_k=None, top_p=None, kv_cache = True):
+        self.eval()
+        target_device = x.device
+        kv_caches = [dict() for _ in range(self.Nx_blocks)] if kv_cache else None
+        
+        gen = torch.Generator(device=target_device)
+        with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+            for token_iter in range(max_pred_tokens):
+                if kv_cache:
+                    logits = self._forward_with_cache(x[:, -1:], token_iter, kv_caches)
+                else:
+                    logits = self(x[:, -self.context_length:])
+                logits = logits[:, -1, :] / temp
+
+                if top_k is not None:
+                    top_k_vals, top_k_idxs = torch.topk(logits, min(top_k, logits.size(-1)))
+                    logits[logits < top_k_vals[:, [-1]]] = -float('Inf')
+
+                if top_p is not None and 0 < top_p < 1.0:
+                    sorted_logits, sorted_indices = torch.sort(logits, descending=True, dim=-1)
+                    cumulative_probs = torch.cumsum(F.softmax(sorted_logits, dim=-1), dim=-1)
+
+                    sorted_mask = cumulative_probs > top_p
+
+                    sorted_mask[..., 1:] = sorted_mask[..., :-1].clone()
+                    sorted_mask[..., 0] = 0
+
+                    indices_to_remove = sorted_mask.scatter(1, sorted_indices, sorted_mask)
+                    logits = logits.masked_fill(indices_to_remove, -float('Inf'))
+
+                prob_dist = F.softmax(logits, -1)
+                x = torch.cat([x, torch.multinomial(prob_dist, 1, generator=gen)], -1).to(target_device)
+            self.train()
+            return x
