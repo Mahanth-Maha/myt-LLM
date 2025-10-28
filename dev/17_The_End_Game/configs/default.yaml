@@ -1,0 +1,115 @@
+# ============================================
+# DEVICE & GLOBAL SETTINGS
+# ============================================
+device: cuda
+deterministic: false
+
+# ============================================
+# TRAINING PARAMETERS
+# ============================================
+effective_batch_size: 256 # for my sake only
+# micro-batch size
+batch_size: 32
+# number of gradient accumulation steps
+gradient_accumulation_steps: 8
+# Optimiser steps 
+max_steps: 20000
+train_time_warmup: 1000
+
+# ============================================
+# TRAINER CONFIG
+# ============================================
+trainer:
+  accum_steps: 8
+  max_grad_norm: 1.0
+  grad_skip_nan_inf: true
+  bf16_autocast: true
+
+  log_grad_norm_every: 0  
+  val_every_steps: 1000 # validate every
+  val_max_batches: 100 
+  log_every_steps: 50
+
+  save_every_steps: 5000
+  keep_last: 2
+  async_ckpt_write: true
+
+  moving_avg_alpha: 0.03
+  ema_decay: 0.999
+  ema_update_every: 1
+
+  milestone: 10000
+  resume_train: false
+
+# ============================================
+# LOGGING & CHECKPOINTS
+# ============================================
+logging:
+  log_dir: ./runs/llm-v1
+  interval_steps: 100
+
+# ============================================
+# DATASET & DATALOADER
+# ============================================
+dataset:
+  shard_folder_list:
+    - ./data/shards/
+    - ./data/shards2/
+  dynamic_streaming: true
+
+dataloader_settings:
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 4
+  persistent_workers: true
+  val_num_workers: 4
+  val_pin_memory: true
+  
+
+# ============================================
+# OPTIMIZER & SCHEDULER
+# ============================================
+optimizer:
+  name: AdamW
+  lr: 0.00015
+  betas: [0.9, 0.95]
+  eps: 1e-8
+  weight_decay: 0.1
+
+scheduler:
+  type: cosine
+  warmup_steps: 2500
+
+# ============================================
+# MODEL
+# ============================================
+model:
+  name: mytlm-debug
+  vocab_size: 100352
+  context_length: 128
+  dimension: 128
+  hidden_dimension: 512
+  n_heads: 8
+  n_kv_heads: 4
+  num_layers: 6
+  non_linearity: swiglu
+  dropout: 0.1
+  tie_weights: true
+  use_checkpoint: true
+  checkpoint_ratio: 0.5
+
+# ============================================
+# GPU & PRECISION
+# ============================================
+gpu:
+  name: AMD
+  compile: true
+  precision: bf16
+  compile_approach: full
+
+# ============================================
+# Bench
+# ============================================
+sweep:
+  batch_sizes: [16, 32, 64, 128, 256]
+  accum_steps: [1, 4, 8]
