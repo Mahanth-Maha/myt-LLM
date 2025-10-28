@@ -1,0 +1,57 @@
+device: cuda
+batch_size: 8
+gradient_accumulation_steps: 1
+training:
+  max_epochs: 1
+  force_epochs: false
+  max_steps: 20000
+  eval_steps: 100
+  save_steps: 500
+  use_checkpoint: true
+  resume_train: true
+  compile_model: true
+  train_time_warmup: 1000
+logging:
+  log_dir: ./myt-llm/v1.debug/
+  interval_steps: 100
+checkpoint:
+  save_interval_steps: 10000
+  keep_latest: true
+  backups:
+    keep_last: 2
+dataset:
+  shard_folder: ./data/shards/
+  shard_folder_list: [./data/shards/, ./data/shards2/ ]
+  dynamic_streaming: true
+dataloader_settings:
+  num_workers: 0
+  pin_memory: False
+milestones:
+  interval_steps: 10000
+  dist_subfolder: dist
+optimizer:
+  name: AdamW
+  lr: 0.0001
+  weight_decay: 0.1
+scheduler:
+  type: cosine
+  warmup_steps: 1000
+model:
+  name: mytlm-tiny
+  vocab_size: 100352
+  context_length: 128
+  dimension: 128
+  hidden_dimension: 512
+  n_heads: 8
+  n_kv_heads: -1
+  num_layers: 12
+  non_linearity: gelu
+  dropout: 0.1
+  tie_weights: true
+  use_checkpoint: true
+  checkpoint_ratio: 0.5
+gpu:
+  name: AMD  # or NVIDIA
+  compile: true
+  precision: bf16  # Options: fp32, fp16, bf16, mixed
+  compile_approach: full  # Options: mode, options, full, reduce-overhead

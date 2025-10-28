@@ -10,7 +10,7 @@ dev/01_tokenization/data
 stage/train_suite_v1/data*.py
 stage/train_suite_v1/amd*.py
 
-
+amd*.py
 
 checkpoints/
 milestones/
@@ -574,3 +574,4 @@ TSWLatexianTemp*
 # option is specified. Footnotes are the stored in a file with suffix Notes.bib.
 # Uncomment the next line to have this generated file ignored.
 #*Notes.bib
+dev/16_Last_Min_Improvements/models/new_arch_1.py
