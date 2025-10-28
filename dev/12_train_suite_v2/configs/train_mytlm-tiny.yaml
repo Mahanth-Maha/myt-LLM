@@ -1,0 +1,21 @@
+batch_size: 512
+model:
+  name: mytlm-tiny
+  vocab_size: 100352
+  context_length: 128
+  dimension: 128
+  n_heads: 8
+  num_layers: 12
+  hidden_dimension: 512
+  non_linearity: gelu
+  dropout: 0.1
+  tie_weights: true
+training:
+  max_steps: 1000
+  scratch: true
+logging:
+  interval_steps: 10
+checkpoint:
+  save_interval_steps: 10
+milestones:
+  interval_steps: 100

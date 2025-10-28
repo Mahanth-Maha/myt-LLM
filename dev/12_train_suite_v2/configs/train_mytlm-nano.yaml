@@ -1,0 +1,19 @@
+model:
+  name: mytlm-nano
+  vocab_size: 100352
+  context_length: 256
+  dimension: 256
+  hidden_dimension: 832
+  n_heads: 8
+  num_layers: 69
+  hidden_dimension: 512
+  non_linearity: gelu
+  dropout: 0.1
+  tie_weights: true
+batch_size: 32
+training:
+  max_steps: 100
+checkpoint:
+  save_interval_steps: 10
+milestones:
+  interval_steps: 50

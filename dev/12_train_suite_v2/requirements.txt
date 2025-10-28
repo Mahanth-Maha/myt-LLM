@@ -1,0 +1,9 @@
+torch>=2.1.0
+torchvision
+torchaudio
+omegaconf
+tqdm
+pytest
+tensorboard
+wandb
+matplotlib
