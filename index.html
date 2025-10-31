@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>myT-LLM Project</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: rgb(228, 231, 192);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        .container2 {
+            max-width: 1200px;
+            margin: 30px auto 0 auto;
+            padding: 0 20px;
+        }
+        .container3 {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            color: #010b1e;
+        }
+        .my-link {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .my-link:hover {
+            color: #0056b3;
+            text-decoration: underline;
+        }
+
+        header {
+            background: #9fecff;
+            padding: 60px 0;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2em;
+            color: #1b0000;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            color: #010b1e;
+            margin-bottom: 30px;
+        }
+
+        .author {
+            font-size: 1.1em;
+            color: #1a4b8a;
+            margin-bottom: 10px;
+        }
+
+        .affiliation {
+            color: #1e5194;
+            font-size: 0.95em;
+        }
+
+        .buttons {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #d45d0e;
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(212, 93, 14, 0.4);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(212, 93, 14, 0.6);
+        }
+
+        .btn-secondary {
+            background: #28407a;
+            box-shadow: 0 4px 15px rgba(40, 64, 122, 0.4);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 6px 20px rgba(40, 64, 122, 0.6);
+        }
+        
+        main {
+            background: white;
+            margin: 40px auto;
+            border-radius: 20px;
+            box-shadow: 0 5px 5px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        section {
+            padding: 40px 40px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        section:last-child {
+            border-bottom: none;
+        }
+
+        h2 {
+            font-size: 2em;
+            color: #2d3748;
+            margin-bottom: 30px;
+            position: relative;
+            padding-bottom: 15px;
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(135deg, #252d51 0%, #282e75 100%);
+            border-radius: 2px;
+        }
+
+        h3 {
+            font-size: 1.4em;
+            color: #4a5568;
+            margin: 30px 0 15px 0;
+        }
+
+        .abstract {
+            background: linear-gradient(135deg, #f6f8fb 0%, #e9ecef 100%);
+            padding: 30px;
+            border-radius: 15px;
+            border-left: 5px solid #667eea;
+            font-size: 1.05em;
+            line-height: 1.8;
+        }
+
+        .highlights {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .highlight-card {
+            background: linear-gradient(135deg, #f6f8fb 0%, #ffffff 100%);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .highlight-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .highlight-card h3 {
+            color: #667eea;
+            margin-top: 0;
+            font-size: 1.2em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        thead {
+            background: #505159;
+            color: white;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #e2e8f0;
+            transition: background 0.2s;
+        }
+
+        tbody tr:hover {
+            background: #f7fafc;
+        }
+
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+        
+        pre.code-sample {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+            white-space: pre;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #010b1e;
+            font-size: 0.95em;
+        }
+                /* Add this to your existing CSS styles */
+
+        .development-notice {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            background-color: #ffeecf;
+            border-left: 5px solid #ffaa00;
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .development-notice .icon-container {
+            font-size: 3em;
+            color: #d76b12; 
+        }
+
+        .development-notice .content-container h3 {
+            margin-top: 0;
+            color: #b77006;
+            font-size: 1.5em;
+        }
+
+        .development-notice .content-container p {
+            font-size: 1.05em;
+            line-height: 1.7;
+            color: #744210; /* Dark brown/amber for text */
+        }
+
+        @media (max-width: 768px) {
+            .development-notice {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🐦‍🔥 myT-LLM</h1>
+            <p class="subtitle">A from-scratch implementation of a modern Generative Pre-trained Transformer (GPT) for research and understanding.</p>
+            <p class="author"><strong>Mahanth Yalla</strong></p>
+            <p class="affiliation">M.Tech Artificial Intelligence</p>
+            <p class="affiliation">Indian Institute of Science, Bengaluru</p>
+            <div class="buttons">
+                <a href="https://github.com/Mahanth-Maha/myT-LLM" class="btn" target="_blank">
+                    <i class="fab fa-github" style="color: #ffffff; font-size: 18px; margin-right: 8px;"></i> View on GitHub
+                </a>
+                <a href="https://github.com/Mahanth-Maha/mahaMiniGPT" class="btn btn-secondary" target="_blank">See miniGPT / Precursor</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container2">
+        <section id="overview">
+            <h2>Objective & Overview</h2>
+            <div class="abstract">
+                <strong>myT-LLM</strong> is a full-stack, from-scratch implementation of a Generative Pre-trained Transformer (GPT) designed to build, train, and evaluate a decoder-only Transformer from first principles. As a continuation of the <a href="https://github.com/Mahanth-Maha/mahaMiniGPT" class="my-link">miniGPT</a> project, it integrates the latest architectural and optimization techniques. The core goal is to understand each component's role in LLM design by training scalable GPT variants and benchmarking them against SOTA enhancements like <strong>SwiGLU, RMSNorm, GQA, and Flash Attention</strong>, all within a clean, open-source research framework.
+            </div>
+        </section>
+        <section id="development-status">
+            <h2 style="color:#b71e06">Project Under Active Development</h2>
+            <div class="development-notice">
+                <div class="icon-container">
+                    <i class="fas fa-tools"></i>
+                </div>
+                <div class="content-container">
+                    <p>
+                        Please note that <strong>myT-LLM</strong> is an ongoing research project. The architecture, training pipelines, and results are subject to change. New features and stability improvements are being added regularly. Stay tuned for future updates!
+                    </p>
+                </div>
+            </div>
+        </section>
+        <section id="architecture">
+            <h2>Architecture Highlights</h2>
+            <p>The model architecture is a modern, decoder-only Transformer inspired by the QWEN and LLaMA lineage, incorporating the following state-of-the-art components:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Component</th>
+                        <th>Choice / Implementation</th>
+                        <th>Reference</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Model Type</strong></td>
+                        <td>Decoder-only Transformer</td>
+                        <td>QWEN / LLaMA lineage</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Normalization</strong></td>
+                        <td>Pre-RMSNorm</td>
+                        <td>Zhang et al., 2019</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Attention</strong></td>
+                        <td>Multi-Head / Grouped-Query / Flash Attention</td>
+                        <td>Dao et al., 2022</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Activation</strong></td>
+                        <td>SwiGLU (2× FFN)</td>
+                        <td>Shazeer, 2020</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Optimizer</strong></td>
+                        <td>AdamW (with fused kernels)</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Scheduler</strong></td>
+                        <td>Cosine Decay + Warmup</td>
+                        <td>Chinchilla, 2022</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Tokenizer</strong></td>
+                        <td>Custom BPE / SentencePiece</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Initialization</strong></td>
+                        <td>GPT-2 style (std = 0.02)</td>
+                        <td>Radford et al., 2019</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="features">
+            <h2>Key Features</h2>
+            <div class="highlights">
+                <div class="highlight-card">
+                    <h3>Modern Architecture</h3>
+                    <p>Integrates RMSNorm, SwiGLU, and Grouped-Query Attention (GQA) for a highly efficient and powerful model foundation.</p>
+                </div>
+                <div class="highlight-card">
+                    <h3>Flash Attention</h3>
+                    <p>Utilizes Flash Attention for faster training and inference on long context windows with significantly reduced memory usage.</p>
+                </div>
+                <div class="highlight-card">
+                    <h3>End-to-End Training</h3>
+                    <p>Provides a complete suite for LLM pre-training, including checkpointing, resumption, and detailed logging.</p>
+                </div>
+                <div class="highlight-card">
+                    <h3>Custom Tokenizer</h3>
+                    <p>Includes tools to train your own Byte-Pair Encoding (BPE) tokenizer from scratch for any corpus.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="structure">
+            <h2>Repository Structure & Lineage</h2>
+            <h3>Code Structure</h3>
+            <p>The repository is organized into development, production, and research directories, reflecting the project's evolution from experimentation to a finalized training pipeline.</p>
+            <pre class="code-sample"><code>myT-LLM/
+├── Research/                 # Papers, notes, experiments
+├── dev/                      # Tokenization & preprocessing pipelines
+├── stage/                    # Archived early stages
+├── prod/                     # Production-ready LLM trainer
+│   ├── architecture.py
+│   ├── tokenizer.py
+│   ├── trainer.py
+│   ├── configs/
+│   └── main.py
+└── assets/                   # Images</code></pre>
+
+            <h3>Research Lineage</h3>
+            <p>This project is the direct successor to the <a href="https://github.com/Mahanth-Maha/mahaMiniGPT" class="my-link">miniGPT</a> project, evolving from a theoretical prototype to a scaled-up, SOTA implementation with modern training infrastructure. Key influences include:</p>
+            <ul style="padding-left: 20px; margin-top: 15px;">
+                <li><em>Attention is All You Need</em> — Vaswani et al., 2017</li>
+                <li><em>Language Models are Few-Shot Learners</em> — OpenAI, 2020</li>
+                <li><em>FlashAttention</em> — Dao et al., 2022</li>
+                <li><em>Chinchilla Scaling Laws</em> — DeepMind, 2022</li>
+                <li><em>LLaMA: Open and Efficient Foundation Language Models</em> — Meta, 2023</li>
+            </ul>
+        </section>
+
+        <section id="motto">
+            <h2>Motto</h2>
+            <div style="padding: 25px; background: linear-gradient(135deg, #d2e3fc 0%, #e9ecef 100%); border-radius: 15px; border-left: 5px solid #28407a; margin-top: 30px; text-align: center;">
+                <p style="font-size: 1.5em; font-style: italic; color: #043b99; line-height: 1.5;">
+                    Don't just use Transformers — understand them.
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container3">
+            <p>© 2025 Mahanth Yalla | <a class="my-link" href="https://mahanthyalla.in">mahanthyalla.in</a></p>
+            <p style="margin-top: 10px;">M.Tech Artificial Intelligence | Indian Institute of Science, Bengaluru</p>
+        </div>
+    </footer>
+</body>
+</html>
